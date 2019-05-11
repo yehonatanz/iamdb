@@ -74,20 +74,21 @@ def fuzzy_find_in_db(
             "SELECT * FROM movies WHERE normalized_title = ? AND start_year = ?",
             [normalize_title(title), start_year],
         )
-        matches = cursor.fetchall()
+        matches = list(map(Movie.from_dict, cursor.fetchall()))
+
+    if len(matches) == 1:
+        return matches[0]
     if not matches:
         raise MovieNotFound(f"Could not find matches for: {title} ({start_year})")
-    elif len(matches) > 1:
-        movie_matches = [m for m in matches if m["type"] == "movie"]
-        if len(movie_matches) == 1:
-            # Prefer movie over other types (tv episodes, etc.)
-            return Movie.from_dict(movie_matches[0])
-        else:
-            raise MultipleMoviesFound(
-                f"{len(matches)} matches found for: {title} ({start_year})"
-            )
+
+    movies = [m for m in matches if m.type == "movie"]
+    if len(movies) == 1:
+        # Prefer movie over other types (tv episodes, etc.)
+        return movies[0]
     else:
-        return Movie.from_dict(matches[0])
+        raise MultipleMoviesFound(
+            f"{len(matches)} matches (and {len(movies)} movies) found for: {title} ({start_year})"
+        )
 
 
 def get_by_id(imdb_id: str, *, conn: Optional[sqlite3.Connection] = None) -> Movie:

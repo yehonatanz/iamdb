@@ -57,3 +57,8 @@ def get(key: str, *subkeys: str, config_path: Optional[str] = None) -> Any:
     for subkey in subkeys:
         data = (data or dict()).get(subkey)  # type: ignore
     return data
+
+
+def set(key: str, data: Config, config_path: Optional[str] = None):
+    full_data = load(config_path=config_path)
+    return dump(dict(full_data, **{key: data}), config_path=config_path)

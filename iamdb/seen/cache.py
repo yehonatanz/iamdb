@@ -34,3 +34,7 @@ def cache_imdb_id(imdb_id: str, movie_dir_path: str):
 
 def load_imdb_id(movie_dir_path: str):
     return load(movie_dir_path)["id"]
+
+
+def has(movie_dir_path: str) -> bool:
+    return os.path.exists(get_cache_path(movie_dir_path))

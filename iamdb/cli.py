@@ -55,38 +55,44 @@ def click_config(func):
         dry_write_config: bool,
         **kwargs,
     ):
-        ctx.obj = dict(ctx.obj or {}, params={})
-        params = dict(ctx.params)
-        params.pop("write_config")
-        params.pop("show_config")
-        params.pop("dry_write_config")
-        key = ctx.info_name
-        assert key
-        ctx.obj["params"][key] = params
-
         if not (show_config or dry_write_config or write_config):
             return func(ctx, *args, **kwargs)
-        if sum([show_config, dry_write_config, write_config]) > 1:
-            raise click.UsageError(
-                "Can specify only one of --write-config/--dry-write-config/--show-config"
-            )
 
-        config_path = ctx.obj["config_path"]
-        data = config.load(config_path=config_path)
-        data_to_be_written = ctx.obj["params"][key]
-        if show_config:
-            click.echo(f"Read from {config_path}:")
-            click.echo(config.dumps(data))
-        elif dry_write_config:
-            click.echo(f"Would write to {config_path} (key={key}):")
-            click.echo(config.dumps(data_to_be_written))
-        elif write_config:
-            click.echo(f"Write to {config_path} (key={key})")
-            config.dump(
-                dict(data, **{key: data_to_be_written}), config_path=config_path
-            )
+        _handle_config_options(
+            ctx,
+            show_config=show_config,
+            dry_write_config=dry_write_config,
+            write_config=write_config,
+        )
 
     return wrapper
+
+
+def _handle_config_options(
+    ctx: click.Context, show_config: bool, dry_write_config: bool, write_config: bool
+):
+    if sum([show_config, dry_write_config, write_config]) > 1:
+        raise click.UsageError(
+            "Can specify only one of --write-config/--dry-write-config/--show-config"
+        )
+    # Get config value from params
+    data_to_be_written = dict(ctx.params)
+    data_to_be_written.pop("write_config")
+    data_to_be_written.pop("show_config")
+    data_to_be_written.pop("dry_write_config")
+
+    config_path = ctx.obj["config_path"]
+    key = ctx.info_name
+    assert key
+    if show_config:
+        click.echo(f"Read from {config_path}:")
+        click.echo(config.dumps(config.load(key, config_path=config_path)))
+    elif dry_write_config:
+        click.echo(f"Would write to {config_path} (key={key}):")
+        click.echo(config.dumps(data_to_be_written))
+    elif write_config:
+        click.echo(f"Write to {config_path} (key={key})")
+        config.set(key, data_to_be_written, config_path=config_path)
 
 
 def json_provider(file_path: str, cmd_name: str) -> config.Config:

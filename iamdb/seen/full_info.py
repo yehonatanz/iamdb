@@ -51,28 +51,24 @@ def _find_imdb_movie(
     auto_open_web: bool = False,
 ) -> Movie:
     """
-    Tries its best to find an imdb match.
-    Trying cache, fuzzy searching and user input, raises exception on failure.
+    Tries its best to find an imdb match for local movie.
+    Tryies cache, fuzzy searching and user input, raises exception on failure.
     """
-    try:
-        assert movie.path
+    assert movie.path
+    if cache.has(movie.path):
         return get_by_id(cache.load_imdb_id(movie.path))
-    except FileNotFoundError:
-        try:
-            return fuzzy_find_in_db(
-                title=movie.title, start_year=movie.start_year, conn=conn
-            )
-        except MovieLookupError:
-            imdb_movie = interactive and _ask_user_for_imdb_id(
-                movie, auto_open_web=auto_open_web
-            )
-            if imdb_movie:
-                return imdb_movie
-            else:
-                raise
+
+    try:
+        return fuzzy_find_in_db(
+            title=movie.title, start_year=movie.start_year, conn=conn
+        )
+    except MovieLookupError:
+        if interactive:
+            return _ask_user_for_imdb_id(movie, auto_open_web=auto_open_web)
+    raise MovieLookupError(f"Could not find {movie} in any way")
 
 
-def _ask_user_for_imdb_id(movie: Movie, auto_open_web: bool = False) -> Optional[Movie]:
+def _ask_user_for_imdb_id(movie: Movie, auto_open_web: bool = False) -> Movie:
     import click
 
     url = _suggest_google_search(movie)
@@ -83,11 +79,11 @@ def _ask_user_for_imdb_id(movie: Movie, auto_open_web: bool = False) -> Optional
     imdb_id = click.prompt(
         f'Please enter the IMDB id for {movie} (try looking in "{url}")'
     )
-    movie = get_by_id(imdb_id)
-    if click.confirm(f"Got {movie!r}. Correct?", default=True):
-        return movie
+    imdb_movie = get_by_id(imdb_id)
+    if click.confirm(f"Got {imdb_movie!r}. Correct?", default=True):
+        return imdb_movie
     else:
-        return None
+        raise MovieLookupError(f"Matched {imdb_movie} for {movie} but user declined")
 
 
 def _suggest_google_search(movie: Movie) -> str:
