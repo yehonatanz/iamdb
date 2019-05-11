@@ -4,15 +4,14 @@ import functools
 import json
 import os
 from contextlib import contextmanager
-from typing import Iterator, List
-from urllib.parse import quote_plus
+from typing import Iterator, List, Optional
 
 import click
 import click_config_file
 import keyring
 import pymongo
 
-from . import localdb, remote, seen
+from . import config, localdb, passwd, remote, seen
 
 
 def click_ipdb(func):
@@ -44,8 +43,8 @@ def click_config(func):
         "--show-config", is_flag=True, help="Show the contents of the config file"
     )
     @click_config_file.configuration_option(
-        cmd_name="iamdb",
-        config_file_name="imdb.json",
+        cmd_name=config.CONFIG_DIR,
+        config_file_name=config.CONFIG_NAME,
         provider=json_provider,
         callback=configuration_callback,
     )
@@ -75,30 +74,26 @@ def click_config(func):
             )
 
         config_path = ctx.obj["config_path"]
-        with open(config_path, "r") as f:
-            config = json.load(f)
-        config_to_be_written = ctx.obj["params"][key]
+        data = config.load(config_path=config_path)
+        data_to_be_written = ctx.obj["params"][key]
         if show_config:
             click.echo(f"Read from {config_path}:")
-            click.echo(json.dumps(config, indent=2))
+            click.echo(config.dumps(data))
         elif dry_write_config:
             click.echo(f"Would write to {config_path} (key={key}):")
-            click.echo(json.dumps(config_to_be_written, indent=2))
+            click.echo(config.dumps(data_to_be_written))
         elif write_config:
             click.echo(f"Write to {config_path} (key={key})")
-            with open(config_path, "w") as f:
-                json.dump(dict(config, **{key: config_to_be_written}), f, indent=2)
+            config.dump(
+                dict(data, **{key: data_to_be_written}), config_path=config_path
+            )
 
     return wrapper
 
 
-def json_provider(file_path: str, cmd_name: str) -> dict:
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    if not os.path.exists(file_path):
-        with open(file_path, "w") as f:
-            json.dump({}, f)
-    with open(file_path, "r") as f:
-        return json.load(f).get(click.get_current_context().info_name, {})
+def json_provider(file_path: str, cmd_name: str) -> config.Config:
+    config.initialize(file_path)
+    return config.load(click.get_current_context().info_name, file_path)
 
 
 def configuration_callback(ctx: click.Context, _, config_path: str):
@@ -213,13 +208,16 @@ def check(ctx: click.Context, interactive: bool, auto_open_web: bool, verbose: b
 
 @cli.group("remote", invoke_without_command=True)
 @click.option("-s", "--server", default="localhost", help="The remote mongodb server")
-@click.option("-u", "--user", default="iamdb", help="mongodb username")
 @click.option("-d", "--database", default="iamdb", help="mongodb database")
+@click.option("-u", "--user", default="iamdb", help="mongodb username")
 @click.option(
-    "-P",
-    "--prompt-password",
+    "-p",
+    "--force-password-prompt",
     is_flag=True,
     help="Force prompting for password instead of taking it from keyring",
+)
+@click.option(
+    "-P", "--no-password-prompt", is_flag=True, help="Forbids prompting for password"
 )
 @click.option(
     "--no-auth",
@@ -232,24 +230,28 @@ def check(ctx: click.Context, interactive: bool, auto_open_web: bool, verbose: b
 def remote_cli(
     ctx: click.Context,
     server: str,
+    database: str,
     user: str,
     no_auth: bool,
-    database: str,
-    prompt_password: bool,
+    force_password_prompt: bool,
+    no_password_prompt: bool,
 ):
     """
     Sub-commands that handles all remote mongodb operations
     """
-    if no_auth:
-        auth = ""
-    else:
-        password = ""
-        if not prompt_password:
-            password = keyring.get_password("iamdb", user)
-        password = password or click.prompt(f"Password for {user}", hide_input=True)
-        keyring.set_password("iamdb", user, password)
-        auth = f"{quote_plus(user)}:{quote_plus(password)}@"
-    uri = f"mongodb+srv://{auth}{server}/{database}?retryWrites=true"
+    password: Optional[str] = None
+    if not no_auth:
+        password = passwd.resolve_password(
+            user,
+            force_password_prompt=force_password_prompt,
+            no_password_prompt=no_password_prompt,
+        )
+    uri = remote.format_uri(
+        server=server, database=database, user=user, password=password, no_auth=no_auth
+    )
+    # Just check we are actually authenticated:
+    if password and remote.connect(uri)[database].list_collection_names():
+        passwd.save(user, password)
     ctx.obj["mongodb_uri"] = uri
     ctx.obj["mongodb_database"] = database
 
