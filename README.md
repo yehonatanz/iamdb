@@ -1,4 +1,6 @@
 # iamdb
+[![Maintainability](https://api.codeclimate.com/v1/badges/ca78817e0669a495bcf4/maintainability)](https://codeclimate.com/github/yehonatanz/iamdb/maintainability)
+
 Highly specific CLI tool to manage my watched movie statistics
 
 Parse, enrich and store data about the movies I watched.
