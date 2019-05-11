@@ -8,6 +8,7 @@ click = ">=7"
 click-config-file = "*"
 pymongo = "*"
 iamdb = {editable = true,path = "."}
+keyring = "*"
 
 [dev-packages]
 mypy = "*"
