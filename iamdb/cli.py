@@ -9,7 +9,7 @@ import click
 import click_config_file
 import pymongo
 
-from . import config, localdb, passwd, remote, seen
+from . import config, localdb, passwd, remote, watched
 
 
 def click_ipdb(func):
@@ -197,10 +197,10 @@ def localdb_cli(
 @click_config
 def check(ctx: click.Context, interactive: bool, auto_open_web: bool, verbose: bool):
     """
-    Check that all seen movies can resolve IMDB data
+    Check that all watched movies can resolve IMDB data
     """
     with localdb.connect(ctx.obj["dbpath"]) as conn:
-        for movie in seen.list_movies_dirs(
+        for movie in watched.list_movies_dirs(
             ctx.obj["movies_dirs"],
             interactive=interactive,
             conn=conn,
@@ -282,15 +282,15 @@ def _report_bulk_write(response: pymongo.results.BulkWriteResult, *, verbose: bo
 @click_config
 def sync(ctx, verbose: bool):
     """
-    Sync seen movies data to remote mongodb
+    Sync watched movies data to remote mongodb
     """
     with localdb.connect(ctx.obj["dbpath"]) as conn, _get_remote_database(
         ctx
     ) as remote_db:
-        movies = list(seen.list_movies_dirs(ctx.obj["movies_dirs"], conn=conn))
+        movies = list(watched.list_movies_dirs(ctx.obj["movies_dirs"], conn=conn))
         if verbose:
-            click.echo(f"Syncing all {len(movies)} seen movies")
-        response = remote.sync(remote_db, movies, replace_existing=True, seen=True)
+            click.echo(f"Syncing all {len(movies)} watched movies")
+        response = remote.sync(remote_db, movies, replace_existing=True, watched=True)
         _report_bulk_write(response, verbose=verbose)
 
 
@@ -312,8 +312,8 @@ def sample(ctx, number: int, verbose: bool):
         movies = list(localdb.sample(number, conn=conn))
         if verbose:
             click.echo(f"Syncing {number} random movies")
-        # Don't wanna override seen information
-        response = remote.sync(remote_db, movies, replace_existing=False, seen=True)
+        # Don't wanna override watched information
+        response = remote.sync(remote_db, movies, replace_existing=False, watched=True)
         _report_bulk_write(response, verbose=verbose)
 
 

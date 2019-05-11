@@ -1,4 +1,4 @@
-from . import localdb, remote, seen
+from . import localdb, remote, watched
 from .models import Movie
 
-__all__ = ["localdb", "remote", "seen", "Movie"]
+__all__ = ["localdb", "remote", "watched", "Movie"]
