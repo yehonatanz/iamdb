@@ -11,3 +11,9 @@ iamdb --help
 iamdb sync
 iamdb check
 ```
+
+### TODO (unordered):
+* Tests
+* Search from CLI
+* Integrate all of IMDB data, not just the basic CSV
+* Predict what other movies I'd like
