@@ -3,6 +3,8 @@
 install:
 	pipenv install
 
+dev:
+	pipenv install --dev
 
 format:
 	pipenv run black .
