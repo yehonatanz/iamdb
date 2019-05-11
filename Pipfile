@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+click = ">=7"
+click-config-file = "*"
+pymongo = "*"
+iamdb = {editable = true,path = "."}
+
+[dev-packages]
+mypy = "*"
+isort = "*"
+black = "*"
+
+[requires]
+python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
