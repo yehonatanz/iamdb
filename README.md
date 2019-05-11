@@ -1,5 +1,6 @@
 # iamdb
 [![Maintainability](https://api.codeclimate.com/v1/badges/ca78817e0669a495bcf4/maintainability)](https://codeclimate.com/github/yehonatanz/iamdb/maintainability)
+[![BCH compliance](https://bettercodehub.com/edge/badge/yehonatanz/iamdb?branch=master)](https://bettercodehub.com/)
 
 Highly specific CLI tool to manage my watched movie statistics
 
