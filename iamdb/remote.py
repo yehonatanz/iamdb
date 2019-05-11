@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from typing import Any, Dict, Iterable, Optional, Union
 from urllib.parse import quote_plus
 

@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import functools
-import json
 import os
 from contextlib import contextmanager
 from typing import Iterator, List, Optional
 
 import click
 import click_config_file
-import keyring
 import pymongo
 
 from . import config, localdb, passwd, remote, seen
@@ -32,7 +30,7 @@ def click_config(func):
     @click.option(
         "--write-config",
         is_flag=True,
-        help="Write the current CLI params to the config file, effectively making them the new default",
+        help="Write the current CLI params to the config file, making them the new defaults",
     )
     @click.option(
         "--dry-write-config",
@@ -185,7 +183,7 @@ def localdb_cli(
     "-o",
     "--auto-open-web",
     is_flag=True,
-    help="Opens a google search for the user when cannot resolve IMDB movie, only in interactive",
+    help="Opens a google search for an IMDB movie can't be resolved, only in interactive mode",
 )
 @click.option("-v", "--verbose", is_flag=True, help="Prints every checked movie")
 @click.pass_context
@@ -283,7 +281,7 @@ def sync(ctx, verbose: bool):
     with localdb.connect(ctx.obj["dbpath"]) as conn, _get_remote_database(
         ctx
     ) as remote_db:
-        movies = list(seen.list_movies_dirs(ctx.obj["movies_dirs"]))
+        movies = list(seen.list_movies_dirs(ctx.obj["movies_dirs"], conn=conn))
         if verbose:
             click.echo(f"Syncing all {len(movies)} seen movies")
         response = remote.sync(remote_db, movies, replace_existing=True, seen=True)
@@ -305,7 +303,7 @@ def sample(ctx, number: int, verbose: bool):
     ) as remote_db:
         if verbose:
             click.echo(f"Sampling {number} rows")
-        movies = list(localdb.sample(number))
+        movies = list(localdb.sample(number, conn=conn))
         if verbose:
             click.echo(f"Syncing {number} random movies")
         # Don't wanna override seen information
