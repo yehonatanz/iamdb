@@ -1,3 +1,4 @@
 [flake8]
 # ignore line length, black handles that anyway
 ignore = E501
+max-complexity = 5

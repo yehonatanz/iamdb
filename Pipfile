@@ -15,6 +15,7 @@ mypy = "*"
 isort = "*"
 black = "*"
 flake8 = "*"
+mccabe = "*"
 
 [requires]
 python_version = "3.7"
