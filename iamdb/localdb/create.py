@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import itertools
 import os
+import tempfile
 import typing
 import urllib.request
 
@@ -15,9 +16,7 @@ if typing.TYPE_CHECKING:
 
     T = TypeVar("T")
 
-IMDB_DATA_TSV_GZ_PATH: str = os.path.join(
-    os.path.expandvars("$TEMP"), "titles.basic.tsv.gz"
-)
+IMDB_DATA_TSV_GZ_PATH: str = os.path.join(tempfile.gettempdir(), "titles.basic.tsv.gz")
 
 
 def _chunked(iterable: Iterable[T], chunk_size: int) -> Iterable[List[T]]:
