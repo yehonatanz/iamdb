@@ -12,7 +12,7 @@ Powered by [click](https://palletsprojects.com/p/click), [click-config-file](htt
 Examples:
 ```bash
 iamdb --help
-iamdb sync
+iamdb remote sync
 iamdb check
 ```
 
